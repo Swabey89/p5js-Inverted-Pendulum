@@ -6,21 +6,21 @@
 // PD controller using matter.js
 
 // Module aliases
-let Engines = Matter.Engine;
-let Bodies = Matter.Bodies;
-let Bodys = Matter.Body;
-let Render = Matter.Render;
-let Runner = Matter.Runner;
-let Composite = Matter.Composite;
-let Composites = Matter.Composites;
-let Constraint = Matter.Constraint;
+const Engines = Matter.Engine;
+const Bodies = Matter.Bodies;
+const Bodys = Matter.Body;
+const Render = Matter.Render;
+const Runner = Matter.Runner;
+const Composite = Matter.Composite;
+const Composites = Matter.Composites;
+const Constraint = Matter.Constraint;
 
 let bob; 
 let cart;
 let arm;
-let angle = 0;
-let error = 0;
-let prevError = 0;
+var angle = 0;
+var error = 0;
+var prevError = 0;
 let engine;
 let world;
 let runner;
@@ -29,16 +29,20 @@ let runner;
 const width = 1100;
 const height = 600;
 
-//Gain values
-const Kp = 0.006;
-const Kd = 0.2;
-const nullGain = 0.0001; //Needs to be looooow
-const desired = 800;
+//Gain Sliders
+let pSlider;
+let dSlider;
 
 //Cart arm length
 const armLength = 200;
 
 function setup() {
+  //Create the gain sliders
+  pSlider = createSlider(0.003, 0.007, 0.005, 0.001);
+  createSpan('Proportional Gain<br/>');
+  dSlider = createSlider(0.008, 0.500, 0.200, 0.001);
+  createSpan('Derivative Gain<br/>');
+
   //Create the simulation environment
   let engine = Engines.create();
   let world = engine.world;
@@ -114,8 +118,7 @@ function setup() {
     cart,
     bob,
     constraint
-  ]);
-  
+  ]);  
   
   Render.run(render);  
   runner = Runner.create();
@@ -135,7 +138,6 @@ function keyPressed() {
   }
 }
 
-
 function draw() { 
   //Calculate the angle, + PI/2 to make upright = 0 radians
   let arm = createVector();  
@@ -150,17 +152,16 @@ function draw() {
     error = (2 * PI) - angle;
   }
   error = error % (2 * PI);
-  error = error - nullGain * (cart.position.x-desired);
   
   //Calculate the rate of change of error
   let deltaError = (error - prevError) / runner.delta;
   prevError = error;
     
   //P control
-  let Pterm = Kp * error;
+  let Pterm = pSlider.value() * error;
   
   //D control
-  let Dterm = Kd * deltaError;
+  let Dterm = dSlider.value() * deltaError;
   
   //PD output (error is negative when arm is right of the cart, hence the negatives)
   let output = (-1 * Pterm) - Dterm;
@@ -170,4 +171,3 @@ function draw() {
   Bodys.applyForce(cart, cart.position, force);
 
 }
-
