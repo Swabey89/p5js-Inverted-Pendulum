@@ -1,11 +1,9 @@
 html, body {
-    margin: 0;
-    padding: 0;
     background-color: darkgray;
   }
   h1 {
-    background-color: rgb(4, 0, 255);
-    color: white;
+    background-color: darkgray;
+    color: rgb(0, 0, 255);
   }
   canvas {
     display: block;

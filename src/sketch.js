@@ -37,11 +37,7 @@ let dSlider;
 const armLength = 200;
 
 function setup() {
-  //Create the gain sliders
-  pSlider = createSlider(0.003, 0.007, 0.005, 0.001);
-  createSpan('Proportional Gain<br/>');
-  dSlider = createSlider(0.008, 0.500, 0.200, 0.001);
-  createSpan('Derivative Gain<br/>');
+  
 
   //Create the simulation environment
   let engine = Engines.create();
@@ -123,7 +119,12 @@ function setup() {
   Render.run(render);  
   runner = Runner.create();
   Runner.run(runner, engine);  
-  
+
+  //Create the gain sliders
+  pSlider = createSlider(0.003, 0.007, 0.005, 0.001);
+  createSpan('&ensp; Proportional Gain<br/>');
+  dSlider = createSlider(0.008, 0.500, 0.200, 0.001);
+  createSpan('&ensp; Derivative Gain<br/>');  
 }
 
 //Add a keypress function to push the bob
