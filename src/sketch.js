@@ -24,6 +24,8 @@ var prevError = 0;
 let engine;
 let world;
 let runner;
+let render;
+let constraint;
 
 //Canvas size
 const width = 1100;
@@ -37,13 +39,17 @@ let dSlider;
 const armLength = 200;
 
 function setup() {
-  
+  //Create the world and pendulum
+  buildWorld();
+  buildPendulum();   
+}
 
+function buildWorld() {
   //Create the simulation environment
-  let engine = Engines.create();
-  let world = engine.world;
+  engine = Engines.create();
+  world = engine.world;
   
-  let render = Render.create({
+  render = Render.create({
     engine: engine,
     element: document.body,
     options: {      
@@ -63,6 +69,7 @@ function setup() {
       fillStyle: '#333'
     }
   });
+  Composite.add(world,road);
   
   //Create the walls
   let leftWall = Bodies.rectangle(25, height/2, 50, height, {
@@ -73,9 +80,10 @@ function setup() {
     render: {
       fillStyle: 'grey'
     }
-  })
+  });
+  Composite.add(world,leftWall);
   
-   let rightWall = Bodies.rectangle(width-25, height/2, 50, height, {
+  let rightWall = Bodies.rectangle(width-25, height/2, 50, height, {
     isStatic: true,
     angle: 0,
     friction: 0,
@@ -83,8 +91,31 @@ function setup() {
     render: {
       fillStyle: 'grey'
     }
-  })
-  
+  });
+  Composite.add(world,rightWall);
+
+  //Create the gain sliders
+  pSlider = createSlider(0, 0.007, 0.005, 0.001);
+  createSpan('&ensp; Proportional Gain<br/>');
+  dSlider = createSlider(0, 0.500, 0.200, 0.001);
+  createSpan('&ensp; Derivative Gain<br/>'); 
+  let resetButton = createButton('Reset');
+  resetButton.mousePressed(reset);
+};
+
+function reset() {
+  Composite.clear(world, {cart,bob,constraint});
+  angle = 0;
+  error = 0;
+  prevError = 0;
+  pSlider.value(0.005);
+  dSlider.value(0.200);
+  Render.stop(render);
+  Runner.stop(runner);
+  buildPendulum();
+}
+
+function buildPendulum() {  
   //Create a cart and bob and constrain them to one another
   cart = Bodies.rectangle(400, 200, 40, 20, {
     angle: 0,
@@ -94,6 +125,7 @@ function setup() {
       fillStyle: 'red'
     }
   });
+  Composite.add(world,cart);
   
   bob = Bodies.circle(400, 0, 10, {
     angle: 0,
@@ -103,28 +135,15 @@ function setup() {
       fillStyle: 'blue'
     }
   });  
+  Composite.add(world,bob);
 
-  let constraint = Constraint.create({bodyA: cart, bodyB: bob, length: armLength});
+  constraint = Constraint.create({bodyA: cart, bodyB: bob, length: armLength});
+  Composite.add(world,constraint);
   
-  //Add everything to the world 
-  Composite.add(world, [
-    road,
-    leftWall,
-    rightWall,
-    cart,
-    bob,
-    constraint
-  ]);  
-  
+
   Render.run(render);  
   runner = Runner.create();
-  Runner.run(runner, engine);  
-
-  //Create the gain sliders
-  pSlider = createSlider(0.003, 0.007, 0.005, 0.001);
-  createSpan('&ensp; Proportional Gain<br/>');
-  dSlider = createSlider(0.008, 0.500, 0.200, 0.001);
-  createSpan('&ensp; Derivative Gain<br/>');  
+  Runner.run(runner, engine);
 }
 
 //Add a keypress function to push the bob
