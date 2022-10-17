@@ -44,6 +44,7 @@ function setup() {
   createSpan('&ensp; Proportional Gain<br/>');
   dSlider = createSlider(0, 0.500, 0.200, 0.001);
   createSpan('&ensp; Derivative Gain<br/>'); 
+  createSpan('Use the left and right arrows to destabalise the pendulum<br/>');
   let resetButton = createButton('Reset');
   resetButton.mousePressed(reset);
 }
