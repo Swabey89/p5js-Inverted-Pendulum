@@ -1,171 +1,62 @@
-/// <reference path="../TSDef/p5.global-mode.d.ts" />
+// Mathew Swabey
+// PID controller using p5.js and matter.js
 
+
+//Reference p5 definitions for Visual Studio Code
+/// <reference path="../TSDef/p5.global-mode.d.ts" />
 "use strict";
 
-// Mathew Swabey
-// PD controller using matter.js
-
 // Module aliases
-const Engines = Matter.Engine;
+const Engine = Matter.Engine;
 const Bodies = Matter.Bodies;
-const Bodys = Matter.Body;
+const Body = Matter.Body;
 const Render = Matter.Render;
 const Runner = Matter.Runner;
 const Composite = Matter.Composite;
 const Composites = Matter.Composites;
 const Constraint = Matter.Constraint;
 
-let bob; 
-let cart;
-let arm;
-var angle = 0;
-var error = 0;
-var prevError = 0;
-let engine;
-let world;
-let runner;
-let render;
-let constraint;
+// Cart, bob and the distance constraint
+let bob, cart, constraint;
 
-//Canvas size
+// Previous error to track rate of change of error
+let prevError = 0;
+
+// Matter modules to build and run the simulation
+let engine, render, runner, world;
+
+// Canvas size
 const width = 1100;
 const height = 600;
+const armLength = 200;
 
-//Gain Sliders
+// Gain Sliders
 let pSlider;
 let dSlider;
 
-//Cart arm length
-const armLength = 200;
-
 function setup() {
-  //Create the world and pendulum
+  // Create the world and pendulum
   buildWorld();
-  buildPendulum();   
-}
+  buildPendulum(); 
 
-function buildWorld() {
-  //Create the simulation environment
-  engine = Engines.create();
-  world = engine.world;
-  
-  render = Render.create({
-    engine: engine,
-    element: document.body,
-    options: {      
-      width: width,
-      height: height,
-      wireframes: false
-    }
-  });  
-  
-  //Create the floor
-  let road = Bodies.rectangle(width/2,height-25,width,50, {
-    isStatic:true,
-    angle: 0,
-    friction: 0,
-    restitution: 0.5,
-    render: {
-      fillStyle: '#333'
-    }
-  });
-  Composite.add(world,road);
-  
-  //Create the walls
-  let leftWall = Bodies.rectangle(25, height/2, 50, height, {
-    isStatic: true,
-    angle: 0,
-    friction: 0,
-    restitution: 1,
-    render: {
-      fillStyle: 'grey'
-    }
-  });
-  Composite.add(world,leftWall);
-  
-  let rightWall = Bodies.rectangle(width-25, height/2, 50, height, {
-    isStatic: true,
-    angle: 0,
-    friction: 0,
-    restitution: 1,
-    render: {
-      fillStyle: 'grey'
-    }
-  });
-  Composite.add(world,rightWall);
-
-  //Create the gain sliders
+  // Create the gain sliders
   pSlider = createSlider(0, 0.007, 0.005, 0.001);
   createSpan('&ensp; Proportional Gain<br/>');
   dSlider = createSlider(0, 0.500, 0.200, 0.001);
   createSpan('&ensp; Derivative Gain<br/>'); 
   let resetButton = createButton('Reset');
   resetButton.mousePressed(reset);
-};
-
-function reset() {
-  Composite.clear(world, {cart,bob,constraint});
-  angle = 0;
-  error = 0;
-  prevError = 0;
-  pSlider.value(0.005);
-  dSlider.value(0.200);
-  Render.stop(render);
-  Runner.stop(runner);
-  buildPendulum();
-}
-
-function buildPendulum() {  
-  //Create a cart and bob and constrain them to one another
-  cart = Bodies.rectangle(400, 200, 40, 20, {
-    angle: 0,
-    friction: 0,
-    restitution: 0,
-    render: {
-      fillStyle: 'red'
-    }
-  });
-  Composite.add(world,cart);
-  
-  bob = Bodies.circle(400, 0, 10, {
-    angle: 0,
-    friction: 0,
-    restitution: 0.5,
-    render: {
-      fillStyle: 'blue'
-    }
-  });  
-  Composite.add(world,bob);
-
-  constraint = Constraint.create({bodyA: cart, bodyB: bob, length: armLength});
-  Composite.add(world,constraint);
-  
-
-  Render.run(render);  
-  runner = Runner.create();
-  Runner.run(runner, engine);
-}
-
-//Add a keypress function to push the bob
-function keyPressed() {
-  if (keyCode == RIGHT_ARROW) {
-    let force = createVector(0.002, 0);
-    Bodys.applyForce(bob, bob.position, force);
-  }
-  if (keyCode == LEFT_ARROW) {
-    let force = createVector(-0.002, 0);
-    Bodys.applyForce(bob, bob.position, force);
-  }
 }
 
 function draw() { 
-  //Calculate the angle, + PI/2 to make upright = 0 radians
+  // Calculate the angle, + PI/2 to make upright = 0 radians
   let arm = createVector();  
   arm.x = bob.position.x - cart.position.x;
   arm.y = bob.position.y - cart.position.y;
   let angle = arm.heading() + PI / 2;
 
-  //Calculate the error. 
+  // Calculate the error. 
+  let error;
   if (angle > 0 && angle < PI) {
     error = (0 - angle);
   } else {
@@ -173,7 +64,7 @@ function draw() {
   }
   error = error % (2 * PI);
   
-  //Calculate the rate of change of error
+  // Calculate the rate of change of error
   let deltaError = (error - prevError) / runner.delta;
   prevError = error;
     
@@ -188,6 +79,103 @@ function draw() {
   
   //Apply the force to the cart
   const force = createVector(output, 0);
-  Bodys.applyForce(cart, cart.position, force);
+  Body.applyForce(cart, cart.position, force);
+}
 
+function buildPendulum() {  
+  // The cart
+  cart = Bodies.rectangle(400, 200, 40, 20, {
+    angle: 0,
+    friction: 0,
+    restitution: 0,
+    render: {
+      fillStyle: 'red'
+    }
+  });
+  Composite.add(world,cart);
+  
+  // The bob
+  bob = Bodies.circle(400, 0, 10, {
+    angle: 0,
+    friction: 0,
+    restitution: 0.5,
+    render: {
+      fillStyle: 'blue'
+    }
+  });  
+  Composite.add(world,bob);
+
+  // Constrain the bob to the cart at the armLength
+  constraint = Constraint.create({bodyA: cart, bodyB: bob, length: armLength});
+  Composite.add(world,constraint);  
+
+  // Start the renderer and runner
+  Render.run(render);  
+  runner = Runner.create();
+  Runner.run(runner, engine);
+}
+
+function buildWorld() {
+  // Create the simulation environment
+  engine = Engine.create();
+  world = engine.world;
+  
+  // Matter renderer. Renders to the document body
+  render = Render.create({
+    engine: engine,
+    element: document.body,
+    options: {      
+      width: width,
+      height: height,
+      wireframes: false
+    }
+  });
+  
+  // Options for static world items
+  const options = {
+      isStatic: true,
+      angle: 0,
+      friction: 0,
+      restitution: 1,
+      render: {fillStyle: 'grey'}
+  };
+  
+  // Create the floor and walls
+  let road = Bodies.rectangle(width/2, height-25, width, 50, options);
+  Composite.add(world,road);
+  
+  let leftWall = Bodies.rectangle(25, height/2, 50, height, options);
+  Composite.add(world,leftWall);
+  
+  let rightWall = Bodies.rectangle(width-25, height/2, 50, height, options);
+  Composite.add(world,rightWall); 
+};
+
+// Destabalise the bob with the left or right arrows
+function keyPressed() {
+  if (keyCode == RIGHT_ARROW) {
+    let force = createVector(0.002, 0);
+    Body.applyForce(bob, bob.position, force);
+  }
+  if (keyCode == LEFT_ARROW) {
+    let force = createVector(-0.002, 0);
+    Body.applyForce(bob, bob.position, force);
+  }
+}
+
+function reset() {
+  // Clear the cart, bob and their constraint
+  Composite.clear(world, {cart,bob,constraint});
+
+  // Reset the previous error and gain slider values
+  prevError = 0;
+  pSlider.value(0.005);
+  dSlider.value(0.200);
+
+  // Stop the renderer and runner
+  Render.stop(render);
+  Runner.stop(runner);
+
+  // Rebuild the pendulum
+  buildPendulum();
 }
