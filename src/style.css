@@ -5,6 +5,4 @@ html, body {
     background-color: darkgray;
     color: rgb(0, 0, 255);
   }
-  canvas {
-    display: block;
-  }
+  

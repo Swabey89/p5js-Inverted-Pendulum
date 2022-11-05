@@ -2,7 +2,7 @@
 // PID controller using p5.js and matter.js
 
 
-//Reference p5 definitions for Visual Studio Code
+// Reference p5 definitions for Visual Studio Code
 /// <reference path="../TSDef/p5.global-mode.d.ts" />
 "use strict";
 
@@ -26,27 +26,19 @@ let prevError = 0;
 let engine, render, runner, world;
 
 // Canvas size
-const width = 1100;
+const width = 1400;
 const height = 600;
 const armLength = 200;
 
-// Gain Sliders
-let pSlider;
-let dSlider;
+// Chart variables
+let angleData = [];
+let angleChart;
 
 function setup() {
-  // Create the world and pendulum
+  // Create the world and pendulum  
   buildWorld();
   buildPendulum(); 
-
-  // Create the gain sliders
-  pSlider = createSlider(0, 0.007, 0.005, 0.001);
-  createSpan('&ensp; Proportional Gain<br/>');
-  dSlider = createSlider(0, 0.500, 0.200, 0.001);
-  createSpan('&ensp; Derivative Gain<br/>'); 
-  createSpan('Use the left and right arrows to destabalise the pendulum<br/>');
-  let resetButton = createButton('Reset');
-  resetButton.mousePressed(reset);
+  buildChart();
 }
 
 function draw() { 
@@ -56,7 +48,7 @@ function draw() {
   arm.y = bob.position.y - cart.position.y;
   let angle = arm.heading() + PI / 2;
 
-  // Calculate the error. 
+  // Calculate the error
   let error;
   if (angle > 0 && angle < PI) {
     error = (0 - angle);
@@ -69,23 +61,28 @@ function draw() {
   let deltaError = (error - prevError) / runner.delta;
   prevError = error;
     
-  //P control
-  let Pterm = pSlider.value() * error;
+  // P control
+  let Pterm = document.getElementById("pSlider").value * error;
   
-  //D control
-  let Dterm = dSlider.value() * deltaError;
+  // D control
+  let Dterm = document.getElementById("dSlider").value * deltaError;
   
-  //PD output (error is negative when arm is right of the cart, hence the negatives)
+  // PD output (error is negative when arm is right of the cart, hence the negatives)
   let output = (-1 * Pterm) - Dterm;
   
-  //Apply the force to the cart
+  // Apply the force to the cart
   const force = createVector(output, 0);
   Body.applyForce(cart, cart.position, force);
+
+  // Update the chart
+  angleData.push(error);
+  angleData.shift();
+  angleChart.update();
 }
 
 function buildPendulum() {  
   // The cart
-  cart = Bodies.rectangle(400, 200, 40, 20, {
+  cart = Bodies.rectangle(width/2, armLength, 40, 20, {
     angle: 0,
     friction: 0,
     restitution: 0,
@@ -96,7 +93,7 @@ function buildPendulum() {
   Composite.add(world,cart);
   
   // The bob
-  bob = Bodies.circle(400, 0, 10, {
+  bob = Bodies.circle(width/2, 0, 10, {
     angle: 0,
     friction: 0,
     restitution: 0.5,
@@ -123,9 +120,9 @@ function buildWorld() {
   
   // Matter renderer. Renders to the document body
   render = Render.create({
+    canvas: simulation,
     engine: engine,
-    element: document.body,
-    options: {      
+    options: {     
       width: width,
       height: height,
       wireframes: false
@@ -140,7 +137,7 @@ function buildWorld() {
       restitution: 1,
       render: {fillStyle: 'grey'}
   };
-  
+
   // Create the floor and walls
   let road = Bodies.rectangle(width/2, height-25, width, 50, options);
   Composite.add(world,road);
@@ -150,7 +147,35 @@ function buildWorld() {
   
   let rightWall = Bodies.rectangle(width-25, height/2, 50, height, options);
   Composite.add(world,rightWall); 
-};
+}
+
+function buildChart() {
+  for (let i=0; i<200; i++) {
+    angleData[i] = 0;
+  }
+  
+  angleChart =  new Chart("angleChart", {
+    type: "line",
+    data: {
+      labels: [...Array(200).keys()],
+      datasets: [{
+        data: angleData,
+        fill: false,
+        borderColor: "rgba(0,0,255,1)",
+        pointRadius: 1
+      }]
+    },
+    options: {
+      animation: {duration: 0},
+      tooltips: {enabled: false},
+      legend: {display: false},
+      scales: {
+        yAxes: [{ticks: {min: -0.3, max: 0.3}}],
+        xAxes: [{ticks: {min: 0, max: 200}}]
+      }
+    }
+  });
+}
 
 // Destabalise the bob with the left or right arrows
 function keyPressed() {
@@ -170,8 +195,8 @@ function reset() {
 
   // Reset the previous error and gain slider values
   prevError = 0;
-  pSlider.value(0.005);
-  dSlider.value(0.200);
+  document.getElementById("pSlider").value = 0.005;
+  document.getElementById("dSlider").value = 0.200;
 
   // Stop the renderer and runner
   Render.stop(render);
